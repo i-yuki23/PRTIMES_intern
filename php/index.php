@@ -131,11 +131,8 @@ $container->set('helper', function ($c) {
 
             $posts = [];
             foreach ($results as $post) {
-		$post['comment_count'] = $this->fetch_first('SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?', $post['id'])['count']; 
-                $query = 'SELECT c.*, u.* FROM `comments` c 
-                             JOIN `users` u ON c.user_id = u.id 
-                             WHERE c.`post_id` = ? 
-                             ORDER BY c.`created_at` DESC';
+                $post['comment_count'] = $this->fetch_first('SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?', $post['id'])['count'];
+                $query = 'SELECT * FROM `comments` WHERE `post_id` = ? ORDER BY `created_at` DESC';
                 if (!$all_comments) {
                     $query .= ' LIMIT 3';
                 }
@@ -143,19 +140,9 @@ $container->set('helper', function ($c) {
                 $ps = $this->db()->prepare($query);
                 $ps->execute([$post['id']]);
                 $comments = $ps->fetchAll(PDO::FETCH_ASSOC);
-
                 foreach ($comments as &$comment) {
-                    $user = [
-                            "id" => $comment['user_id'],
-                            "account_name" => $comment['account_name'],
-                            "passhash" => $comment['passhash'],
-                            "authority" => $comment['authority'],
-                            "del_flg" => $comment['del_flg']
-                    ];
-                     unset($comment['account_name'], $comment['passhash'], $comment['authority'], $comment['del_flg']);
-                     $comment['user'] = $user;
+                    $comment['user'] = $this->fetch_first('SELECT * FROM `users` WHERE `id` = ?', $comment['user_id']);
                 }
-		
                 unset($comment);
                 $post['comments'] = array_reverse($comments);
 
